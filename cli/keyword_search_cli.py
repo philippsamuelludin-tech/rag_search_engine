@@ -14,14 +14,19 @@ def main() -> None:
 
     match args.command:
         case "search":
-            print(f"Searching for: {args.query}")
-            with open("/data/movies.json", "r", encoding="utf-8") as f:
+            query = args.query
+            print(f"Searching for: {query}")
+            with open("data/movies.json", "r", encoding="utf-8") as f:
                 movies = json.load(f)
             list_of_movies_with_query = []
             for movie in movies["movies"]:
-                if movie.title.contains(args.query):
-                    list_of_movies_with_query.append(movie.title)
+                if query in movie["title"]:
+                    list_of_movies_with_query.append(movie["title"])
+            i = 1
             for movie in list_of_movies_with_query:
+                if i < 6:
+                    print(f"{i}. {movie}")
+                    i += 1
 
         case _:
             parser.print_help()
