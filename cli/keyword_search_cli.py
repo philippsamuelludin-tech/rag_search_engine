@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import string
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -15,13 +16,19 @@ def main() -> None:
     match args.command:
         case "search":
             query = args.query
+            transTable = str.maketrans("", "", string.punctuation)
             print(f"Searching for: {query}")
+
             with open("data/movies.json", "r", encoding="utf-8") as f:
                 movies = json.load(f)
+
             list_of_movies_with_query = []
+
             for movie in movies["movies"]:
-                if query in movie["title"]:
+
+                if query.lower().translate(transTable) in movie["title"].lower().translate(transTable):
                     list_of_movies_with_query.append(movie["title"])
+
             i = 1
             for movie in list_of_movies_with_query:
                 if i < 6:
