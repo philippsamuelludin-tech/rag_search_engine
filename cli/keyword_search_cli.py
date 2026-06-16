@@ -1,37 +1,40 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
-from keyword_search import has_matching_token, tokenize_text
+from lib.search_command import search_command
+from lib.build_command import build_command
+from lib.keyword_search import tokenizeSingleTerm
+from lib.load_movies import load_movies
+from lib.load_stopwords import load_stopwords
+from lib.InvertedIndex import InvertedIndex
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     search_parser = subparsers.add_parser("search", help="Search movies using keywords")
+    subparsers.add_parser("build", help="Build the inverted index")
+    tf_parser = subparsers.add_parser("tf", help="Return the term frequency")
+    tf_parser.add_argument("documentID", type=int, help="Document ID")
+    tf_parser.add_argument("term", type=str, help="the term")
     search_parser.add_argument("query", type=str, help="Search query")
 
     args = parser.parse_args()
 
     match args.command:
         case "search":
-            query = args.query
-            print(f"Searching for: {query}")
+            search_command(args)
+            
+        case "build":
+            build_command()
 
-            with open("data/movies.json", "r", encoding="utf-8") as f:
-                movies = json.load(f)
-
-            list_of_movies_with_query = []
-
-            tokenizedQuery = tokenize_text(query)
-
-            for movie in movies["movies"]:
-                tokenizedMovie = tokenize_text(movie["title"])
-                if has_matching_token(tokenizedQuery, tokenizedMovie) == True:
-                    list_of_movies_with_query.append(movie["title"])
-
-            for i, movie in enumerate(list_of_movies_with_query[:5], 1):
-                print(f"{i}. {movie}")
+        case "tf":
+            singleTerm = tokenizeSingleTerm(args.term)
+            invIdx = InvertedIndex()
+            invIdx.load()
+            print(invIdx.get_tf(args.documentID, singleTerm))
+            
+            
 
         case _:
             parser.print_help()
