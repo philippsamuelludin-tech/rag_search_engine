@@ -3,6 +3,8 @@ from lib.keyword_search import tokenize_text
 from collections import defaultdict, Counter
 from pickle import dump, load
 import os
+import math
+from lib.constants import *
 
 
 
@@ -47,3 +49,11 @@ class InvertedIndex:
     def get_tf(self, doc_id, term):
         docIDCounter = self.term_frequencies[doc_id]
         return docIDCounter[term]
+    
+    def get_bm25_idf(self, term: str) -> float:
+        return math.log((len(self.docmap) - len(self.index[term]) + 0.5) / (len(self.index[term]) + 0.5) + 1)
+    
+    def get_bm25_tf(self, doc_id, term, k1=BM25_K1):
+        tf = self.get_tf(doc_id, term)
+        sat_tf = (tf * (k1 + 1)) / (tf + k1)
+        return sat_tf
