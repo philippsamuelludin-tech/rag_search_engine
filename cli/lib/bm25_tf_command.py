@@ -3,7 +3,7 @@ from lib.InvertedIndex import InvertedIndex
 from lib.constants import *
 
 
-def bm25_tf_command(doc_id, term, k1=BM25_K1):
+def bm25_tf_command(doc_id, term, k1=BM25_K1, b=BM25_B):
     invIdx = InvertedIndex()
     invIdx.load()
     term = tokenizeSingleTerm(term)
