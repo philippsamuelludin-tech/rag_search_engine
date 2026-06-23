@@ -40,13 +40,27 @@ class SemanticSearch:
             return self.embeddings
         
     def search(self, query, limit):
-        if self.embeddings == None:
+        if self.embeddings is None:
             raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
+        
         embedding = self.gernerate_embedding(query)
         similarity_list = []
-        for doc_emb in self.embeddings:
+
+        for i, doc_emb in enumerate(self.embeddings):
             sim = cosine_similarity(doc_emb, embedding)
-        similarity_list = [(key, value) for key, value in sorted(similarity_list, key=lambda item: item[1], reverse=True)]
+            similarity_list.append((sim, self.documents[i]))
+
+        similarity_list = [(key, value) for key, value in sorted(similarity_list, key=lambda item: item[0], reverse=True)]
+        return_list = []
+
+        for movie in similarity_list[:limit]:
+            run_dict = {}
+            run_dict["score"] = movie[0]
+            run_dict["title"] = movie[1]["title"]
+            run_dict["description"] = movie[1]["description"]
+            return_list.append(run_dict)
+       
+        return return_list 
 
 
 
