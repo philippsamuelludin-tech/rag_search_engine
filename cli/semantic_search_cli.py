@@ -2,8 +2,10 @@
 
 import argparse
 
-from lib.semantic_search import *
+
 import json
+
+from lib.semantic_search import embed_query_text, embed_text, verify_embeddings
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
@@ -17,11 +19,15 @@ def main() -> None:
     embed_query_parser.add_argument("query", type=str, help="the query to embed")
     embed_parser = subparsers.add_parser("embed_text", help="Embeds a input text")
     embed_parser.add_argument("text", type=str, help="The text to embed")
+    chunk_paser = subparsers.add_parser("chunk", help="ixed-size chunking to split long text into smaller pieces for embedding.")
+    chunk_paser.add_argument("text", type=str, help="the text to chunk")
+    chunk_paser.add_argument("--chunk-size", type=int, default=200, help="the size of a single chunk")
     args = parser.parse_args()
 
     match args.command:
 
         case "search":
+            from lib.semantic_search import SemanticSearch
             search = SemanticSearch()
             movies = []
             with open("data/movies.json", "r", encoding="UTF-8") as f:
@@ -34,16 +40,32 @@ def main() -> None:
                 counter += 1
 
         case "verify":
+            from lib.semantic_search import verify_model
             verify_model()
 
         case "embed_text":
+            from lib.semantic_search import embed_text
             embed_text(args.text)
 
         case "verify_embeddings":
+            from lib.semantic_search import verify_embeddings
             verify_embeddings()
 
         case "embed_query":
+            from lib.semantic_search import embed_query_text
             embed_query_text(args.query)
+
+        case "chunk":
+            text_split = args.text.split()
+            chunks = []
+            for i in range(0, len(text_split), args.chunk_size):
+                chunk_words = text_split[i:i + args.chunk_size]
+                chunk_str = " ".join(chunk_words)
+                chunks.append(chunk_str)
+            print(f"Chunking {len(args.text)} characters")
+            for i, chunk in enumerate(chunks):
+                print(f"{i+1}. {chunk}")
+
 
         case _:
             parser.print_help()
