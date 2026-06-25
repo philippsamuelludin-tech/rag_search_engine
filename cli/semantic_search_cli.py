@@ -1,11 +1,8 @@
 #!/usr/bin/env python3
 
 import argparse
-
-
 import json
-
-from lib.semantic_search import embed_query_text, embed_text, verify_embeddings
+import re
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
@@ -19,9 +16,14 @@ def main() -> None:
     embed_query_parser.add_argument("query", type=str, help="the query to embed")
     embed_parser = subparsers.add_parser("embed_text", help="Embeds a input text")
     embed_parser.add_argument("text", type=str, help="The text to embed")
-    chunk_paser = subparsers.add_parser("chunk", help="ixed-size chunking to split long text into smaller pieces for embedding.")
+    chunk_paser = subparsers.add_parser("chunk", help="fixed-size chunking to split long text into smaller pieces for embedding.")
     chunk_paser.add_argument("text", type=str, help="the text to chunk")
     chunk_paser.add_argument("--chunk-size", type=int, default=200, help="the size of a single chunk")
+    chunk_paser.add_argument("--overlap", type=int, help="How much overlap between the chunks")
+    semantic_chunk = subparsers.add_parser("semantic_chunk", help="chunks longer sentances")
+    semantic_chunk.add_argument("text", type=str, help="the text to chunk")
+    semantic_chunk.add_argument("--max-chunk-size", type=int, default=4, help="max chunk size")
+    semantic_chunk.add_argument("--overlap", type=int, default=0, help="overlap between chunks")
     args = parser.parse_args()
 
     match args.command:
@@ -59,13 +61,26 @@ def main() -> None:
             text_split = args.text.split()
             chunks = []
             for i in range(0, len(text_split), args.chunk_size):
-                chunk_words = text_split[i:i + args.chunk_size]
+                if args.overlap > 0 and i != 0:
+                    chunk_words = text_split[i-args.overlap:i + args.chunk_size]
+                else:
+                    chunk_words = text_split[i:i + args.chunk_size]
                 chunk_str = " ".join(chunk_words)
                 chunks.append(chunk_str)
             print(f"Chunking {len(args.text)} characters")
             for i, chunk in enumerate(chunks):
                 print(f"{i+1}. {chunk}")
 
+        case "semantic_chunk":
+            splitText = re.split(r"(?<=[.!?])\s+", args.text)
+            chunks = []
+            for i in range(0, len(splitText) - args.overlap, args.max_chunk_size - args.overlap):
+                chunk_words = splitText[i : i + args.max_chunk_size]
+                chunk_str = " ".join(chunk_words)
+                chunks.append(chunk_str)
+            print(f"Semantically chunking {len(args.text)} characters")
+            for i, chunk in enumerate(chunks):
+                print(f"{i+1}. {chunk}")
 
         case _:
             parser.print_help()
