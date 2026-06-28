@@ -191,3 +191,48 @@ class ChunkedSemanticSearch(SemanticSearch):
                 pass
 
         return self.build_chunk_embeddings(documents)
+    
+    def search_chunks(self, query: str, limit: int = 10):
+        embedding = self.gernerate_embedding(query)
+        chunk_score = []
+        for chunk_idx, chunk_embedding in enumerate(self.chunk_embeddings):
+            metadata = self.chunk_metadata[chunk_idx]
+            score = cosine_similarity(chunk_embedding, embedding)
+            chunk_score.append(
+                    {
+                        "chunk_idx": metadata["chunk_idx"],
+                        "movie_idx": metadata["movie_idx"],
+                        "score": score,
+                    }
+                )
+            
+        best_chunk_scores = {}
+
+        for candidate in chunk_score:
+            item_id = candidate["movie_idx"]
+
+            if item_id not in best_chunk_scores:
+                best_chunk_scores[item_id] = candidate
+            elif candidate["score"] > best_chunk_scores[item_id]["score"]:
+                best_chunk_scores[item_id] = candidate
+
+        sorted_items = sorted(
+            best_chunk_scores.values(),
+            key=lambda item: item["score"],
+            reverse=True,
+        )
+
+        top_items = sorted_items[:limit]
+        result = []
+        for item in top_items:
+            original_record = self.documents[item["movie_idx"]]
+            
+            result.append({
+                "id": original_record["id"],
+                "title": original_record["title"],
+                "document": original_record["description"][:100],
+                "score": round(item["score"], 4),
+                "metadata": original_record.get("metadata", {})
+            })
+
+        return result

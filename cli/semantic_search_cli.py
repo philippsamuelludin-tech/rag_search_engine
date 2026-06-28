@@ -26,6 +26,9 @@ def main() -> None:
     semantic_chunk1.add_argument("text", type=str, help="the text to chunk")
     semantic_chunk1.add_argument("--max-chunk-size", type=int, default=4, help="max chunk size")
     semantic_chunk1.add_argument("--overlap", type=int, default=0, help="overlap between chunks")
+    search_chunked = subparsers.add_parser("search_chunked", help="Search using chunks")
+    search_chunked.add_argument("query", type=str, help="The query to search for")
+    search_chunked.add_argument("--limit", default=5, type=int, help="Number of results to return")
     args = parser.parse_args()
 
     match args.command:
@@ -87,6 +90,17 @@ def main() -> None:
             print(f"Semantically chunking {len(args.text)} characters")
             for i, chunk in enumerate(chunks):
                 print(f"{i+1}. {chunk}")
+
+        case "search_chunked":
+            from lib.semantic_search import ChunkedSemanticSearch
+            from lib.load_movies import load_movies
+            movie_doc = load_movies()
+            search = ChunkedSemanticSearch()
+            search.load_or_create_chunk_embeddings(movie_doc["movies"])
+            results = search.search_chunks(args.query, args.limit)
+            for i, result in enumerate(results):
+                print(f"\n{i+1}. {result['title']} (score: {result['score']:.4f})")
+                print(f"   {result['document']}...")
 
         case _:
             parser.print_help()
