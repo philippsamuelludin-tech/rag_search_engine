@@ -3,6 +3,7 @@ import re
 import json
 
 import numpy as np
+from lib.search_utils import semantic_chunk
 
 try:
     from sentence_transformers import SentenceTransformer
@@ -122,19 +123,7 @@ def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
 
     return dot_product / (norm1 * norm2)
 
-def semantic_chunk(text: str, max_chunk_size: int, overlap: int) -> list[str]:
-    sentences = re.split(r"(?<=[.!?])\s+", text)
-    chunks = []
-    i = 0
-    n_sentences = len(sentences)
-    while i < n_sentences:
-        chunk_sentences = sentences[i : i + max_chunk_size]
-        # stop if this chunk is too small to be useful
-        if chunks and len(chunk_sentences) <= overlap:
-            break
-        chunks.append(" ".join(chunk_sentences))
-        i += max_chunk_size - overlap
-    return chunks
+
 
 class ChunkedSemanticSearch(SemanticSearch):
     def __init__(self, model_name: str = "all-MiniLM-L6-v2") -> None:

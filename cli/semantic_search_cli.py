@@ -85,7 +85,7 @@ def main() -> None:
                 print(f"{i+1}. {chunk}")
 
         case "semantic_chunk":
-            from lib.semantic_search import semantic_chunk
+            from lib.search_utils import semantic_chunk
             chunks = semantic_chunk(args.text, args.max_chunk_size, args.overlap)
             print(f"Semantically chunking {len(args.text)} characters")
             for i, chunk in enumerate(chunks):
