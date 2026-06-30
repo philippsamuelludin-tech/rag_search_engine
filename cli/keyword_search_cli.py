@@ -9,7 +9,7 @@ from lib.get_idf import get_idf
 from lib.search_command import search_command
 from lib.build_command import build_command
 from lib.keyword_search import tokenizeSingleTerm
-from lib.load_movies import load_movies
+from lib.search_utils import load_movies
 from lib.load_stopwords import load_stopwords
 from lib.InvertedIndex import InvertedIndex
 

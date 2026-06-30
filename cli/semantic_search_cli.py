@@ -93,10 +93,10 @@ def main() -> None:
 
         case "search_chunked":
             from lib.semantic_search import ChunkedSemanticSearch
-            from lib.load_movies import load_movies
+            from lib.search_utils import load_movies
             movie_doc = load_movies()
             search = ChunkedSemanticSearch()
-            search.load_or_create_chunk_embeddings(movie_doc["movies"])
+            search.load_or_create_chunk_embeddings(movie_doc)
             results = search.search_chunks(args.query, args.limit)
             for i, result in enumerate(results):
                 print(f"\n{i+1}. {result['title']} (score: {result['score']:.4f})")

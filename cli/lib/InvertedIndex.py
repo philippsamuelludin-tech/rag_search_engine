@@ -1,4 +1,4 @@
-from lib.load_movies import load_movies
+from lib.search_utils import CACHE_DIR, load_movies
 from lib.keyword_search import tokenize_text
 from collections import defaultdict, Counter
 from pickle import dump, load
@@ -14,7 +14,10 @@ class InvertedIndex:
         self.docmap = {}
         self.term_frequencies = defaultdict(Counter)
         self.doc_lengths = {}
-        self.doc_lengths_path = os.path.join("cache", "doc_lengths.pkl")
+        self.index_path = os.path.join(CACHE_DIR, "index.pkl")       # missing
+        self.docmap_path = os.path.join(CACHE_DIR, "docmap.pkl")     # missing
+        self.tf_path = os.path.join(CACHE_DIR, "term_frequencies.pkl")  # missing
+        self.doc_lengths_path = os.path.join(CACHE_DIR, "doc_lengths.pkl")  # you have this but with hardcoded "cache"
 
     def __add_document(self, doc_id, text):
         tokenizedText = tokenize_text(text)
@@ -29,7 +32,7 @@ class InvertedIndex:
     
     def build(self):
         movies = load_movies()
-        for movie in movies["movies"]:
+        for movie in movies:
             self.__add_document(movie["id"], f"{movie['title']} {movie['description']}")
             self.docmap[movie["id"]] = movie
 
@@ -90,7 +93,4 @@ class InvertedIndex:
                 running_score += self.bm25(doc, token)
             scores[doc] = running_score
         scores = [(key, value) for key, value in sorted(scores.items(), key=lambda item: item[1], reverse=True)]
-        return_score = []
-        for i in range(limit):
-            return_score.append(scores[i])
-        return return_score
+        return scores[:limit]
