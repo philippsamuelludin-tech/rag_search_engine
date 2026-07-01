@@ -9,6 +9,10 @@ def main() -> None:
     weighted_search_parser.add_argument("query", type=str, help="The query to search for")
     weighted_search_parser.add_argument("--alpha", type=float, default=0.5)
     weighted_search_parser.add_argument("--limit", type=int, default=5)
+    rrf_parser = subparsers.add_parser("rrf-search", help="Calculate the RRF-Score")
+    rrf_parser.add_argument("query", type=str, help="The query to search")
+    rrf_parser.add_argument("-k", default=60, type=int, help="The weight when calculating results")
+    rrf_parser.add_argument("--limit", default=5, type=int, help="The Limit of result returned")
 
     args = parser.parse_args()
 
@@ -26,22 +30,23 @@ def main() -> None:
             movies = load_movies()
             h_search = HybridSearch(movies)
             result = h_search.weighted_search(args.query, args.alpha, args.limit)
-            print(
-                f"Weighted Hybrid Search Results for '{result['query']}' (alpha={result['alpha']}):"
-            )
-            print(
-                f"  Alpha {result['alpha']}: {int(result['alpha'] * 100)}% Keyword, {int((1 - result['alpha']) * 100)}% Semantic"
-            )
-            for i, res in enumerate(result["results"], 1):
+            for i, res in enumerate(result, 1):
                 print(f"{i}. {res['title']}")
-                print(f"   Hybrid Score: {res.get('score', 0):.3f}")
-                metadata = res.get("metadata", {})
-                if "bm25_score" in metadata and "semantic_score" in metadata:
-                    print(
-                        f"   BM25: {metadata['bm25_score']:.3f}, Semantic: {metadata['semantic_score']:.3f}"
-                    )
-                print(f"   {res['document'][:100]}...")
-                print()
+                print(f"  Hybrid Score: {res['score']:.3f}")
+                print(f"  BM25: {res['metadata']['bm25_score']:.3f}, Semantic: {res['metadata']['semantic_score']:.3f}")
+                print(f"  {res['document']}")
+
+        case "rrf-search":
+            from lib.hybrid_search import HybridSearch
+            from lib.search_utils import load_movies
+            movies = load_movies()
+            rf_search = HybridSearch(movies)
+            result = rf_search.rrf_search(args.query, args.k, args.limit)
+            for i, res in enumerate(result, 1):
+                print(f"{i}. {res['title']}")
+                print(f"  RRF Score: {res['score']:.3f}")
+                print(f"  BM25 Rank: {res['metadata']['bm25_rank']:.3f}, Semantic Rank: {res['metadata']['semantic_rank']:.3f}")
+                print(f"  {res['document']}")
 
 
         case _:

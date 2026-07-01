@@ -2,7 +2,7 @@ import os
 
 from lib.InvertedIndex import InvertedIndex
 from lib.semantic_search import ChunkedSemanticSearch
-from lib.search_utils import format_search_result, normalize, hybrid_score, load_movies
+from lib.search_utils import DOCUMENT_PREVIEW_LENGTH, format_search_result, normalize, hybrid_score, rrf_score
 
 class HybridSearch:
     def __init__(self, documents: list[dict]) -> None:
@@ -25,7 +25,6 @@ class HybridSearch:
         bm25_scores = [r[1] for r in results_bm25]  # r[1] is the score
         normalized_bm25 = normalize(bm25_scores)
 
-        movie_doc = load_movies()
         results_semantic = self.semantic_search.search_chunks(query, limit * 500)
         semantic_scores = [r["score"] for r in results_semantic]
         normalized_semantic = normalize(semantic_scores)
@@ -53,4 +52,43 @@ class HybridSearch:
 
 
     def rrf_search(self, query: str, k: int, limit: int = 10) -> list[dict]:
-        raise NotImplementedError("RRF hybrid search is not implemented yet.")
+        results_bm25 = self._bm25_search(query, limit * 500)
+        results_semantic = self.semantic_search.search_chunks(query, limit * 500)
+
+        semantic_ranks = {}
+        for rank, item in enumerate(results_semantic, start=1):
+            doc_id = item["id"]
+            if doc_id not in semantic_ranks:
+                semantic_ranks[doc_id] = rank
+
+        bm25_ranks = {}
+        for rank, item in enumerate(results_bm25, start=1):
+            doc_id = item[0]
+            if doc_id not in bm25_ranks:
+                bm25_ranks[doc_id] = rank
+
+        docID_dict = {}
+        all_ids = set(bm25_ranks) | set(semantic_ranks)
+
+        for docID in all_ids:
+            bm25_rank = bm25_ranks.get(docID)      # None if absent
+            sem_rank = semantic_ranks.get(docID)   # None if absent
+
+            bm25_part = rrf_score(bm25_rank, k) if bm25_rank is not None else 0
+            sem_part = rrf_score(sem_rank, k) if sem_rank is not None else 0
+            total = bm25_part + sem_part
+
+            docID_dict[docID] = (self.idx.docmap[docID], bm25_rank, sem_rank, total)
+            
+        results = []
+        for doc_id, data in sorted(docID_dict.items(), key=lambda item: item[1][3], reverse=True):
+            doc, bm25_norm, sem_norm, rf_score = data
+            results.append(format_search_result(
+                doc_id=doc_id,
+                title=doc["title"],
+                document=doc["description"][:DOCUMENT_PREVIEW_LENGTH],
+                score=rf_score,
+                bm25_rank=bm25_norm,
+                semantic_rank=sem_norm,
+            ))
+        return results[:limit]
